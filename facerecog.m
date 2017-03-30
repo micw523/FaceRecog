@@ -17,7 +17,7 @@ num_im_per_sub = 11;
 options = struct;
 options.len = 60;
 options.wid = 80;
-if exist('im','var')
+if ~exist('im','var')
     [im, im_label] = faceload(options);
 end
 num_images = size(im,2);
@@ -46,13 +46,15 @@ if exist('F','var')
     if F_new < F
         F = F_new;
         dic_mtx = dic_mtx_new;
-        sparse_X = sparse_X_new;
+        sparse_X = coeff_solve(im_train, dic_mtx, max_nnz);
         save('faces.mat','im','im_label','dic_mtx','sparse_X','F');
+    else
+        sparse_X = coeff_solve(im_train, dic_mtx, max_nnz);
     end
 else
     F = F_new;
     dic_mtx = dic_mtx_new;
-    sparse_X = sparse_X_new;
+    sparse_X = coeff_solve(im_train, dic_mtx, max_nnz);
     save('faces.mat','im','im_label','dic_mtx','sparse_X','F');
 end
 
@@ -61,8 +63,8 @@ train.X = full(sparse_X); train.y = im_label_train;
 % Add row of 1s to the dataset to act as an intercept term.
 train.X = [ones(1,size(train.X,2)); train.X];
 num_classes = num_subject + 1;
-rng(0);
-lambda = 0.05;
+rng('shuffle');
+lambda = 0.1;
 options = struct('MaxIter', 200, 'progTol', 1e-6);
 n = size(dic_mtx,2)+1;
 theta = randn(n,num_classes-1)*0.1;

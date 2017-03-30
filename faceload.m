@@ -14,6 +14,7 @@ for j = 1:15
         im_temp = imread(f_name);
         im_temp = imresize(im_temp, [len wid]);
         im_temp = double(im_temp(:))/255;
+        im_temp = im_temp - mean(im_temp);
         im(:,(j-1)*length(condition_str)+i) = im_temp/norm(im_temp,2);
         im_labels((j-1)*length(condition_str)+i)=j;
     end
