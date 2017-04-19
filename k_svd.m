@@ -35,6 +35,7 @@ else
             [dict_vec, sparse_X] = dict_train(data, dic_mtx, j, sparse_X);
             dic_mtx(:,j) = dict_vec;
         end
+        fprintf('Training Iteration %d Completed\n', i);
     end
 end
 dic_mtx = clear_dict(dic_mtx, sparse_X, data);

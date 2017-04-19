@@ -1,25 +1,31 @@
 % Facial Recognition by sparse representation.
 addpath ./minFunc_2012/minFunc
 addpath ./minFunc_2012/minFunc/compiled
-if exist('faces.mat','file')
-    load faces.mat;
+facebase = 'yaleB';
+mat_name = sprintf('faces_%s.mat',facebase);
+if exist(mat_name,'file')
+    load (mat_name);
 end
 % 30 dictionary elements, 100 iterations, 15 max. nonzero elements
 % per image maximum
-num_dict = 30;
-num_iter = 100;
+num_dict = 60;
+num_iter = 50;
 max_nnz = 15;
 % 15 subjects, 11 images per subject
-num_subject = 15;
+num_subject = 38;
 num_im_per_sub = 11;
 
 %% Load Yale Face Database, downsampled to 60-by-80 by default
 options = struct;
 options.len = 60;
 options.wid = 80;
-if ~exist('im','var')
+if (~exist('im','var')) && strcmp(facebase,'yale')
     [im, im_label] = faceload(options);
+elseif (~exist('im','var')) && strcmp(facebase,'yaleB')
+    [im, im_label] = loadYaleB(options);
 end
+im = im(:,im_label<num_subject+1);
+im_label = im_label(im_label<num_subject+1);
 num_images = size(im,2);
 im_identify = zeros(size(im,1),num_subject);
 for i = 1:num_subject
@@ -34,10 +40,11 @@ I = randperm(num_images);
 im = im(:,I);
 im_label = im_label(I);
 % Separate images into training and testing
-im_train = im(:,1:120);
-im_test = im(:,121:end);
-im_label_train = im_label(1:120);
-im_label_test = im_label(121:end);
+cvp = cvpartition(length(im_label),'HoldOut',0.5);
+im_train = im(:,cvp.training);
+im_test = im(:,cvp.test);
+im_label_train = im_label(cvp.training);
+im_label_test = im_label(cvp.test);
 
 %% Train a set of images
 [dic_mtx_new, sparse_X_new] = k_svd(im_train, num_dict, num_iter, max_nnz);
@@ -47,7 +54,7 @@ if exist('F','var')
         F = F_new;
         dic_mtx = dic_mtx_new;
         sparse_X = coeff_solve(im_train, dic_mtx, max_nnz);
-        save('faces.mat','im','im_label','dic_mtx','sparse_X','F');
+        save(mat_name,'im','im_label','dic_mtx','sparse_X','F');
     else
         sparse_X = coeff_solve(im_train, dic_mtx, max_nnz);
     end
@@ -55,7 +62,7 @@ else
     F = F_new;
     dic_mtx = dic_mtx_new;
     sparse_X = coeff_solve(im_train, dic_mtx, max_nnz);
-    save('faces.mat','im','im_label','dic_mtx','sparse_X','F');
+    save(mat_name,'im','im_label','dic_mtx','sparse_X','F');
 end
 
 %% Softmax regression training
