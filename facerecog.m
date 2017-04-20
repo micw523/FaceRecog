@@ -12,7 +12,7 @@ num_dict = 90*strcmp(facebase,'yaleB') + 30;
 num_iter = 50;
 max_nnz = 15;
 corruption_flag = 0;
-occlusion_flag = 0.1; % Occlusion percentage
+occlusion_flag = 0.0; % Occlusion percentage
 % 15 subjects, 11 images per subject
 num_subject = 38*strcmp(facebase,'yaleB')+15*strcmp(facebase,'yale');
 num_im_per_sub = 64*strcmp(facebase,'yaleB')+11*strcmp(facebase,'yale');
@@ -36,20 +36,20 @@ end
 
 %% Check for corruption and occlusion flags
 if occlusion_flag > 0
-    load mandrill;
-    [x_len, x_wid] = size(X);
+    %load mandrill;
+    %[x_len, x_wid] = size(X);
     occ_area = occlusion_flag * options.len * options.wid;
-    occ_len = floor(sqrt(occ_area / x_wid * x_len));
-    occ_wid = floor(occ_len * x_wid / x_len);
-    X = imresize(X, [occ_len occ_wid]);
-    X = X / norm(X(:));
-    [x_len, x_wid] = size(X);
+    occ_len = floor(sqrt(occ_area / options.wid * options.len));
+    occ_wid = floor(occ_len * options.wid / options.len);
     for i = 1:num_images
+        im_r = reshape(im(:,i),[options.len options.wid]);
+        X = imresize(im_r, [occ_len occ_wid]);
+        % X = X / norm(X(:));
+        [x_len, x_wid] = size(X);
         x_pos_occ = randi([1 options.len-x_len+1]);
         y_pos_occ = randi([1 options.wid-x_wid+1]);
-        im_r = reshape(im(:,i),[options.len options.wid]);
         im_r(x_pos_occ:x_pos_occ+x_len-1, y_pos_occ:y_pos_occ+x_wid-1)=...
-            1/4*X/max(max(X))*max(max(im_r));
+            X;
         im(:,i) = im_r(:);
     end
 end

@@ -56,7 +56,7 @@ for i = 1:38
     % Subtract the ambient image from all other images, resize them to the
     % required len/wid level, then normalize with respect to their 2-norm
     for j_image = 1:n_im_per_person
-        im_temp = im_subject(:,:,j_image) - im_ambient;
+        im_temp = im_subject(:,:,j_image); % - im_ambient;
         im_temp = imresize(im_temp, [len wid]);
         im_temp = im_temp(:)/norm(im_temp(:));
         im(:,(i-1)*n_im_per_person + j_image) = im_temp;
