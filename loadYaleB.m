@@ -17,10 +17,10 @@ for i = 1:38
     im_subfolder = sprintf('%syaleB%02d/', im_folder, i_sub);
     D = dir(im_subfolder);
     n_valid_image = 0;
+    im_subject = zeros(192, 168, n_im_per_person);
     for j_image = 1:length(D)
         im_name_str = D(j_image).name;
         valid_image_flag = strfind(im_name_str,'.pgm');
-        im_subject = zeros(192, 168, n_im_per_person);
         % will return a valid image flag; non-empty if is an actual image
         if ~isempty(valid_image_flag)
             % this is a valid image
@@ -59,7 +59,7 @@ for i = 1:38
         im_temp = im_subject(:,:,j_image) - im_ambient;
         im_temp = imresize(im_temp, [len wid]);
         im_temp = im_temp(:)/norm(im_temp(:));
-        im(:,i*n_im_per_person + j_image) = im_temp;
+        im(:,(i-1)*n_im_per_person + j_image) = im_temp;
     end
 end
         

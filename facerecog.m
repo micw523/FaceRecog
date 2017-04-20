@@ -8,17 +8,19 @@ if exist(mat_name,'file')
 end
 % 30 dictionary elements, 100 iterations, 15 max. nonzero elements
 % per image maximum
-num_dict = 60;
+num_dict = 30*strcmp(facebase,'yaleB')+30;
 num_iter = 50;
 max_nnz = 15;
+corruption_flag = 0;
+occlusion_flag = 0; % Occlusion percentage
 % 15 subjects, 11 images per subject
-num_subject = 38;
-num_im_per_sub = 11;
+num_subject = 38*strcmp(facebase,'yaleB')+15*strcmp(facebase,'yale');
+num_im_per_sub = 64*strcmp(facebase,'yaleB')+11*strcmp(facebase,'yale');
 
 %% Load Yale Face Database, downsampled to 60-by-80 by default
 options = struct;
-options.len = 60;
-options.wid = 80;
+options.len = 60 + 20*strcmp(facebase,'yaleB');
+options.wid = 80 - 20*strcmp(facebase,'yaleB');
 if (~exist('im','var')) && strcmp(facebase,'yale')
     [im, im_label] = faceload(options);
 elseif (~exist('im','var')) && strcmp(facebase,'yaleB')
@@ -32,6 +34,24 @@ for i = 1:num_subject
     im_identify(:,i)=im(:,(i-1)*num_im_per_sub+1);
 end
 
+%% Check for corruption and occlusion flags
+if occlusion_flag > 0
+    load mandrill;
+    [x_len, x_wid] = size(X);
+    occ_area = occlusion_flag * options.len * options.wid;
+    occ_len = floor(sqrt(occ_area / x_wid * x_len));
+    occ_wid = floor(occ_len * x_wid / x_len);
+    X = imresize(X, [occ_len occ_wid]);
+    X = X / norm(X(:));
+    [x_len, x_wid] = size(X);
+    for i = 1:num_images
+        x_pos_occ = randi([1 options.len-x_len+1]);
+        y_pos_occ = randi([1 options.wid-x_wid+1]);
+        im_r = reshape(im(:,i),[options.len options.wid]);
+        im_r(x_pos_occ:x_pos_occ+x_len-1, y_pos_occ:y_pos_occ+x_wid-1)=X;
+        im(:,i) = im_r(:);
+    end
+end
 %% Randomly permute the images
 % Set seed to 0 so that results will be the same each run
 % rng(0);
@@ -48,7 +68,7 @@ im_label_test = im_label(cvp.test);
 
 %% Train a set of images
 [dic_mtx_new, sparse_X_new] = k_svd(im_train, num_dict, num_iter, max_nnz);
-F_new = norm(dic_mtx_new*sparse_X_new-im_train,'fro');
+F_new = norm(dic_mtx_new*sparse_X_new-im_train,'fro')/size(im_train,2);
 if exist('F','var')
     if F_new < F
         F = F_new;
@@ -88,3 +108,8 @@ test.X = [ones(1,size(test.X,2)); test.X];
 accuracy = multi_classifier_accuracy(theta,test.X,test.y);
 fprintf('Test accuracy: %2.1f%%\n', 100*accuracy);
 
+%% SVM Classifier
+[test_acc, train_acc, model] = svm_classifier_simple(train.X',train.y',...
+    test.X',test.y');
+fprintf('Training accuracy: %2.1f%%\n', 100*train_acc);
+fprintf('Testing accuracy: %2.1f%%\n', 100*test_acc);
