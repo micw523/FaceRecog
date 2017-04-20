@@ -8,19 +8,19 @@ if exist(mat_name,'file')
 end
 % 30 dictionary elements, 100 iterations, 15 max. nonzero elements
 % per image maximum
-num_dict = 30*strcmp(facebase,'yaleB')+30;
+num_dict = 90*strcmp(facebase,'yaleB') + 30;
 num_iter = 50;
 max_nnz = 15;
 corruption_flag = 0;
-occlusion_flag = 0; % Occlusion percentage
+occlusion_flag = 0.1; % Occlusion percentage
 % 15 subjects, 11 images per subject
 num_subject = 38*strcmp(facebase,'yaleB')+15*strcmp(facebase,'yale');
 num_im_per_sub = 64*strcmp(facebase,'yaleB')+11*strcmp(facebase,'yale');
 
 %% Load Yale Face Database, downsampled to 60-by-80 by default
 options = struct;
-options.len = 60 + 20*strcmp(facebase,'yaleB');
-options.wid = 80 - 20*strcmp(facebase,'yaleB');
+options.len = 60 + 36*strcmp(facebase,'yaleB');
+options.wid = 80 + 4*strcmp(facebase,'yaleB');
 if (~exist('im','var')) && strcmp(facebase,'yale')
     [im, im_label] = faceload(options);
 elseif (~exist('im','var')) && strcmp(facebase,'yaleB')
@@ -48,7 +48,8 @@ if occlusion_flag > 0
         x_pos_occ = randi([1 options.len-x_len+1]);
         y_pos_occ = randi([1 options.wid-x_wid+1]);
         im_r = reshape(im(:,i),[options.len options.wid]);
-        im_r(x_pos_occ:x_pos_occ+x_len-1, y_pos_occ:y_pos_occ+x_wid-1)=X;
+        im_r(x_pos_occ:x_pos_occ+x_len-1, y_pos_occ:y_pos_occ+x_wid-1)=...
+            1/4*X/max(max(X))*max(max(im_r));
         im(:,i) = im_r(:);
     end
 end
@@ -91,7 +92,7 @@ train.X = full(sparse_X); train.y = im_label_train;
 train.X = [ones(1,size(train.X,2)); train.X];
 num_classes = num_subject + 1;
 rng('shuffle');
-lambda = 0.1;
+lambda = 0.05;
 options = struct('MaxIter', 200, 'progTol', 1e-6);
 n = size(dic_mtx,2)+1;
 theta = randn(n,num_classes-1)*0.1;
@@ -109,7 +110,7 @@ accuracy = multi_classifier_accuracy(theta,test.X,test.y);
 fprintf('Test accuracy: %2.1f%%\n', 100*accuracy);
 
 %% SVM Classifier
-[test_acc, train_acc, model] = svm_classifier_simple(train.X',train.y',...
-    test.X',test.y');
+[test_acc, train_acc, model] = svm_classifier_simple(train.X(2:end,:)',train.y',...
+    test.X(2:end,:)',test.y');
 fprintf('Training accuracy: %2.1f%%\n', 100*train_acc);
 fprintf('Testing accuracy: %2.1f%%\n', 100*test_acc);
