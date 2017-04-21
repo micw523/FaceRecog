@@ -12,7 +12,7 @@ num_dict = 90*strcmp(facebase,'yaleB') + 30;
 num_iter = 50;
 max_nnz = 15;
 corruption_flag = 0;
-occlusion_flag = 0; % Occlusion percentage
+occlusion_flag = 0.5; % Occlusion percentage
 % 15 subjects, 11 images per subject
 num_subject = 38*strcmp(facebase,'yaleB')+15*strcmp(facebase,'yale');
 num_im_per_sub = 64*strcmp(facebase,'yaleB')+11*strcmp(facebase,'yale');
@@ -49,7 +49,7 @@ if occlusion_flag > 0
         x_pos_occ = randi([1 options.len-x_len+1]);
         y_pos_occ = randi([1 options.wid-x_wid+1]);
         im_r(x_pos_occ:x_pos_occ+x_len-1, y_pos_occ:y_pos_occ+x_wid-1)=...
-            X;
+            0.25*X;
         im(:,i) = im_r(:);
     end
 end
@@ -73,8 +73,7 @@ im_label_test = im_label(cvp.test);
 F_new = norm(dic_mtx_new*sparse_X_new-im_train,'fro')/size(im_train,2);
 
 %% Generate sparse matrix for training set and set dictionary
-F_new = 10000;
-max_nnz = 60;
+max_nnz = 15;
 if exist('F','var')
     if F_new < F
         F = F_new;
@@ -125,7 +124,7 @@ fprintf('Testing accuracy: %2.1f%%\n', 100*test_acc);
 %% Reject / Accept Test Images with sparsity concentration index 
 num_test_case = size(sp_X_test,2);
 SCI = zeros(1,num_test_case, 'logical');
-tau = 0.065;
+tau = 0.14;
 for i = 1:num_test_case
     sp_indices = full(sp_X_test(:,i));
     kk = length(sp_indices);
